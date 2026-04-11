@@ -12,3 +12,10 @@ __pycache__/
 venv/
 .DS_Store
 outputs/
+envs/
+logs/
+data/
+notebooks/.ipynb_checkpoints/
+outputs/
+*.err
+*.out
