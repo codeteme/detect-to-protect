@@ -19,3 +19,10 @@ notebooks/.ipynb_checkpoints/
 outputs/
 *.err
 *.out
+envs/
+logs/
+data/
+notebooks/.ipynb_checkpoints/
+outputs/
+*.err
+*.out
