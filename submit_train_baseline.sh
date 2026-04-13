@@ -15,10 +15,18 @@ source /hpc/group/coursess26/ids705/team-project/detect-to-protect/activate.sh
 cd /hpc/group/coursess26/ids705/team-project/detect-to-protect
 mkdir -p logs outputs
 
+PYTHON_BIN=/hpc/group/coursess26/ids705/team-project/detect-to-protect/envs/dtp/bin/python
+
 echo "Job started: $(date)"
 echo "Node: $(hostname)"
-echo "GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader)"
+if command -v nvidia-smi >/dev/null 2>&1; then
+	echo "GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader)"
+else
+	echo "GPU: nvidia-smi not available"
+fi
+echo "Python: $($PYTHON_BIN -c 'import sys; print(sys.executable)')"
+echo "CUDA: $($PYTHON_BIN -c 'import torch; print(torch.cuda.is_available())')"
 
-python src/train_baseline.py
+$PYTHON_BIN -u src/train_baseline.py
 
 echo "Job finished: $(date)"
