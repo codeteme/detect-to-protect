@@ -210,7 +210,51 @@ pip freeze > /hpc/group/coursess26/ids705/team-project/detect-to-protect/require
 
 ---
 
-## 7. Troubleshooting
+## 7. Weights & Biases (W&B) Setup
+
+Use W&B to track training curves, run configs, and best checkpoints.
+
+### 7.1 Install and login (once per netid)
+
+```bash
+source /hpc/group/coursess26/ids705/team-project/detect-to-protect/activate.sh
+/hpc/group/coursess26/ids705/team-project/detect-to-protect/envs/dtp/bin/pip install wandb
+/hpc/group/coursess26/ids705/team-project/detect-to-protect/envs/dtp/bin/wandb login
+```
+
+Paste your API key from: `https://wandb.ai/settings/account`
+
+Notes:
+- W&B may create credentials in `~/.netrc` (this is normal).
+- If `wandb` is not found, use the full path shown above.
+
+### 7.2 Optional: set API key in environment
+
+```bash
+export WANDB_API_KEY=<your_api_key>
+export WANDB_MODE=online
+unset WANDB_DISABLED
+```
+
+To persist across sessions:
+```bash
+echo 'export WANDB_API_KEY=<your_api_key>' >> ~/.bashrc
+```
+
+### 7.3 Submit jobs with W&B env exported
+
+```bash
+sbatch --export=ALL,WANDB_API_KEY=$WANDB_API_KEY submit_train_baseline.sh
+```
+
+Open project runs in browser (replace with your account/project):
+```text
+https://wandb.ai/<entity>/<project>
+```
+
+---
+
+## 8. Troubleshooting
 
 | Symptom | Fix |
 |---|---|
@@ -222,10 +266,12 @@ pip freeze > /hpc/group/coursess26/ids705/team-project/detect-to-protect/require
 | Job killed immediately | Not on a GPU node; always `srun` or `sbatch` before running training |
 | SSH tunnel drops mid-training | Switch to `sbatch` — job continues even after disconnect |
 | Accidentally edited `~/detect-to-protect` | `rm -rf ~/detect-to-protect`; work only in the shared path |
+| W&B page shows no runs | Check correct entity/project URL and clear dashboard filters |
+| `wandb: command not found` | Use full binary path: `/hpc/group/.../envs/dtp/bin/wandb` |
 
 ---
 
-## 8. Quick Reference — Copy-Paste Session Startup
+## 9. Quick Reference — Copy-Paste Session Startup
 
 ```bash
 # Terminal 1 — on DCC
