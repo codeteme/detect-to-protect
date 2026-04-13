@@ -27,6 +27,16 @@ fi
 echo "Python: $($PYTHON_BIN -c 'import sys; print(sys.executable)')"
 echo "CUDA: $($PYTHON_BIN -c 'import torch; print(torch.cuda.is_available())')"
 
-$PYTHON_BIN -u src/train_baseline.py
+CLIP_LEN=${CLIP_LEN:-32}
+ANCHOR_OFFSET_SEC=${ANCHOR_OFFSET_SEC:-0.0}
+RUN_NAME=${RUN_NAME:-baseline-clip${CLIP_LEN}-ofs${ANCHOR_OFFSET_SEC}}
+echo "CLIP_LEN: ${CLIP_LEN}"
+echo "ANCHOR_OFFSET_SEC: ${ANCHOR_OFFSET_SEC}"
+echo "RUN_NAME: ${RUN_NAME}"
+
+$PYTHON_BIN -u src/train_baseline.py \
+	--clip-len "${CLIP_LEN}" \
+	--anchor-offset-sec "${ANCHOR_OFFSET_SEC}" \
+	--run-name "${RUN_NAME}"
 
 echo "Job finished: $(date)"

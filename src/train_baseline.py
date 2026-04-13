@@ -7,6 +7,8 @@ Usage:
 
 from pathlib import Path
 import os
+import argparse
+import importlib
 
 import numpy as np
 import pandas as pd
@@ -16,7 +18,11 @@ from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, Dataset, Subset
 from tqdm import tqdm
-import wandb
+
+try:
+    wandb = importlib.import_module("wandb")
+except ModuleNotFoundError:
+    wandb = None
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -37,10 +43,18 @@ WEIGHT_DECAY = 1e-4
 VAL_SPLIT = 0.2
 FPS = 10
 CLIP_LEN = 32
+ANCHOR_OFFSET_SEC = 0.0
 
 
 class NexarFramesDataset(Dataset):
-    def __init__(self, csv_path: Path, frames_dir: Path, fps: int, clip_len: int):
+    def __init__(
+        self,
+        csv_path: Path,
+        frames_dir: Path,
+        fps: int,
+        clip_len: int,
+        anchor_offset_sec: float,
+    ):
         df = pd.read_csv(csv_path)
         df["id"] = df["id"].astype(str).str.zfill(5)
         available_ids = {p.stem for p in frames_dir.glob("*.npy")}
@@ -54,6 +68,7 @@ class NexarFramesDataset(Dataset):
         self.frames_dir = frames_dir
         self.fps = fps
         self.clip_len = clip_len
+        self.anchor_offset_sec = anchor_offset_sec
 
     def __len__(self):
         return len(self.df)
@@ -66,7 +81,8 @@ class NexarFramesDataset(Dataset):
         n = len(frames)
         toe = row.get("time_of_event")
         if pd.notna(toe):
-            end = min(int(toe * self.fps), n)
+            anchor_frame = int((float(toe) - self.anchor_offset_sec) * self.fps)
+            end = min(max(anchor_frame, 1), n)
             start = max(end - self.clip_len, 0)
         else:
             end = n
@@ -138,7 +154,23 @@ def run_epoch(model, loader, criterion, optimizer, device):
     return avg_loss, auc
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Train scratch baseline with ablation args")
+    parser.add_argument("--clip-len", type=int, default=CLIP_LEN)
+    parser.add_argument("--anchor-offset-sec", type=float, default=ANCHOR_OFFSET_SEC)
+    parser.add_argument("--run-name", type=str, default="")
+    parser.add_argument("--disable-wandb", action="store_true")
+    return parser.parse_args()
+
+
 def main():
+    args = parse_args()
+    clip_len = args.clip_len
+    anchor_offset_sec = args.anchor_offset_sec
+    offset_tag = str(anchor_offset_sec).replace(".", "p").replace("-", "m")
+    run_name = args.run_name or f"baseline-clip{clip_len}-ofs{offset_tag}"
+    best_ckpt = OUT_DIR / f"best_baseline_scratch_clip{clip_len}_ofs{offset_tag}.pt"
+
     torch.manual_seed(SEED)
     np.random.seed(SEED)
 
@@ -146,31 +178,43 @@ def main():
     pin_mem = torch.cuda.is_available()
     print(f"Device: {device}")
 
-    if not os.getenv("WANDB_API_KEY"):
+    wandb_enabled = (
+        (not args.disable_wandb)
+        and bool(os.getenv("WANDB_API_KEY"))
+        and (wandb is not None)
+    )
+    if not args.disable_wandb and wandb is None:
+        print("wandb package not installed; running without W&B")
+    if not args.disable_wandb and wandb is not None and not os.getenv("WANDB_API_KEY"):
         raise ValueError("WANDB_API_KEY is not set in environment")
 
-    # Initialize Weights & Biases
-    wandb.init(
-        project="detect-to-protect",
-        name="baseline-scratch",
-        config={
-            "seed": SEED,
-            "batch_size": BATCH_SIZE,
-            "epochs": EPOCHS,
-            "learning_rate": LR,
-            "weight_decay": WEIGHT_DECAY,
-            "clip_len": CLIP_LEN,
-            "fps": FPS,
-            "model": "TinyVideoCNN",
-        },
-    )
-    print(f"W&B run: {wandb.run.url}")
+    if wandb_enabled:
+        assert wandb is not None
+        wandb.init(
+            project="detect-to-protect",
+            name=run_name,
+            config={
+                "seed": SEED,
+                "batch_size": BATCH_SIZE,
+                "epochs": EPOCHS,
+                "learning_rate": LR,
+                "weight_decay": WEIGHT_DECAY,
+                "clip_len": clip_len,
+                "fps": FPS,
+                "anchor_offset_sec": anchor_offset_sec,
+                "model": "TinyVideoCNN",
+            },
+        )
+        print(f"W&B run: {wandb.run.url}")
+    else:
+        print("W&B disabled")
 
     dataset = NexarFramesDataset(
         csv_path=TRAIN_CSV,
         frames_dir=FRAMES_DIR,
         fps=FPS,
-        clip_len=CLIP_LEN,
+        clip_len=clip_len,
+        anchor_offset_sec=anchor_offset_sec,
     )
     print(f"Usable videos with frames: {len(dataset)}")
     labels = dataset.df["target"].to_numpy(dtype=np.int64)
@@ -212,14 +256,17 @@ def main():
             f"val_loss={val_loss:.4f} val_auc={val_auc:.4f}"
         )
 
-        # Log to W&B
-        wandb.log({
-            "epoch": epoch,
-            "train_loss": train_loss,
-            "train_auc": train_auc,
-            "val_loss": val_loss,
-            "val_auc": val_auc,
-        })
+        if wandb_enabled:
+            assert wandb is not None
+            wandb.log(
+                {
+                    "epoch": epoch,
+                    "train_loss": train_loss,
+                    "train_auc": train_auc,
+                    "val_loss": val_loss,
+                    "val_auc": val_auc,
+                }
+            )
 
         if val_auc > best_val_auc:
             best_val_auc = val_auc
@@ -228,16 +275,24 @@ def main():
                     "epoch": epoch,
                     "model_state_dict": model.state_dict(),
                     "val_auc": val_auc,
-                    "config": {"clip_len": CLIP_LEN},
+                    "config": {
+                        "clip_len": clip_len,
+                        "anchor_offset_sec": anchor_offset_sec,
+                    },
                 },
-                BEST_CKPT,
+                best_ckpt,
             )
             print(f"Saved best checkpoint (val_auc={val_auc:.4f})")
-            wandb.log({"best_val_auc": val_auc})
-            wandb.save(str(BEST_CKPT))
+            print(f"Checkpoint path: {best_ckpt}")
+            if wandb_enabled:
+                assert wandb is not None
+                wandb.log({"best_val_auc": val_auc})
+                wandb.save(str(best_ckpt))
 
     print(f"Done. Best val_auc={best_val_auc:.4f}")
-    wandb.finish()
+    if wandb_enabled:
+        assert wandb is not None
+        wandb.finish()
 
 
 if __name__ == "__main__":
