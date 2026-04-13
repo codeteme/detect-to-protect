@@ -6,6 +6,7 @@ Usage:
 """
 
 from pathlib import Path
+import os
 
 import numpy as np
 import pandas as pd
@@ -15,6 +16,7 @@ from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, Dataset, Subset
 from tqdm import tqdm
+import wandb
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -144,6 +146,26 @@ def main():
     pin_mem = torch.cuda.is_available()
     print(f"Device: {device}")
 
+    if not os.getenv("WANDB_API_KEY"):
+        raise ValueError("WANDB_API_KEY is not set in environment")
+
+    # Initialize Weights & Biases
+    wandb.init(
+        project="detect-to-protect",
+        name="baseline-scratch",
+        config={
+            "seed": SEED,
+            "batch_size": BATCH_SIZE,
+            "epochs": EPOCHS,
+            "learning_rate": LR,
+            "weight_decay": WEIGHT_DECAY,
+            "clip_len": CLIP_LEN,
+            "fps": FPS,
+            "model": "TinyVideoCNN",
+        },
+    )
+    print(f"W&B run: {wandb.run.url}")
+
     dataset = NexarFramesDataset(
         csv_path=TRAIN_CSV,
         frames_dir=FRAMES_DIR,
@@ -190,6 +212,15 @@ def main():
             f"val_loss={val_loss:.4f} val_auc={val_auc:.4f}"
         )
 
+        # Log to W&B
+        wandb.log({
+            "epoch": epoch,
+            "train_loss": train_loss,
+            "train_auc": train_auc,
+            "val_loss": val_loss,
+            "val_auc": val_auc,
+        })
+
         if val_auc > best_val_auc:
             best_val_auc = val_auc
             torch.save(
@@ -201,9 +232,12 @@ def main():
                 },
                 BEST_CKPT,
             )
-            print(f"Saved best checkpoint to {BEST_CKPT} (val_auc={val_auc:.4f})")
+            print(f"Saved best checkpoint (val_auc={val_auc:.4f})")
+            wandb.log({"best_val_auc": val_auc})
+            wandb.save(str(BEST_CKPT))
 
     print(f"Done. Best val_auc={best_val_auc:.4f}")
+    wandb.finish()
 
 
 if __name__ == "__main__":
