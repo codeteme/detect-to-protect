@@ -122,5 +122,5 @@ Why: tests if the model can predict from pre-collision cues rather than impact f
 
 | run_name | clip_len | anchor_offset_sec | best_val_auc | checkpoint | submission_file | kaggle_score | notes |
 |---|---:|---:|---:|---|---|---:|---|
-| videomae-clip16-ofs0.0 | 16 | 0.0 | | outputs/best_videomae_clip16_ofs0p0.pt | outputs/submission_videomae-clip16-ofs0.0.csv | | first videomae baseline |
-| videomae-clip16-ofs0.5 | 16 | 0.5 | | outputs/best_videomae_clip16_ofs0p5.pt | outputs/submission_videomae-clip16-ofs0.5.csv | | anchor offset ablation |
+| videomae-clip16-ofs0.0 | 16 | 0.0 | 0.7690 | outputs/best_videomae_clip16_ofs0p0.pt | outputs/submission_videomae-clip16-ofs0.0.csv | | first videomae baseline |
+| videomae-clip16-ofs0.5 | 16 | 0.5 | 0.7724 | outputs/best_videomae_clip16_ofs0p5.pt | outputs/submission_videomae-clip16-ofs0.5.csv | | anchor offset ablation |
