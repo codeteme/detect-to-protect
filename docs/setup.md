@@ -287,7 +287,3 @@ ssh -L 8888:dcc-courses-gpu-01:8888 <netid>@dcc-login.oit.duke.edu
 ```
 
 Then open `http://localhost:8888` → `notebooks/train.ipynb` → kernel: **DTP (GPU)**.
-
----
-
-*Last updated: April 2026. If the env is broken, contact the team before reinstalling anything.*
