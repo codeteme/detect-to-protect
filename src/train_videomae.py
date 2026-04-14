@@ -291,7 +291,6 @@ def main():
             if wandb_enabled:
                 assert wandb is not None
                 wandb.log({"best_val_auc": val_auc})
-                wandb.save(str(best_ckpt))
 
     print(f"Done. Best val_auc={best_val_auc:.4f}")
     if wandb_enabled:

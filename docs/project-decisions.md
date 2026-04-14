@@ -105,8 +105,22 @@ Why this test:
 | baseline-clip100-ofs0.0 | 100 | 0.0 | 0.6289 | outputs/best_baseline_scratch_clip100_ofs0p0.pt | outputs/submission_baseline-clip100-ofs0.0.csv |  | lower than baseline |
 | baseline-clip32-ofs0.5 | 32 | 0.5 | 0.5894 | outputs/best_baseline_scratch_clip32_ofs0p5.pt | outputs/submission_baseline-clip32-ofs0.5.csv |  | lower than baseline |
 
-## Prediction Outcome Notes
+## VideoMAE Ablation Plan
 
-- Prediction jobs completed successfully on DCC.
-- Final rerun used per-ablation checkpoint and submission paths.
-- Four ablation-specific submission files were generated in `outputs/` and copied to local `outputs/`.
+Fine-tuning MCG-NJU/videomae-base with binary classification head. Clip length is fixed at 16 frames — the model was pretrained with fixed position embeddings for 16 frames and cannot handle other lengths without retraining the embeddings.
+
+### Event-anchor ablation
+
+```bash
+jid=$(CLIP_LEN=16 ANCHOR_OFFSET_SEC=0.5 RUN_NAME=videomae-clip16-ofs0.5 sbatch scripts/submit_train_videomae.sh | awk '{print $4}')
+CLIP_LEN=16 ANCHOR_OFFSET_SEC=0.5 RUN_NAME=videomae-clip16-ofs0.5 sbatch --dependency=afterok:${jid} scripts/submit_predict_videomae.sh
+```
+
+Why: tests if the model can predict from pre-collision cues rather than impact frames.
+
+## VideoMAE Experiment Tracking Table
+
+| run_name | clip_len | anchor_offset_sec | best_val_auc | checkpoint | submission_file | kaggle_score | notes |
+|---|---:|---:|---:|---|---|---:|---|
+| videomae-clip16-ofs0.0 | 16 | 0.0 | | outputs/best_videomae_clip16_ofs0p0.pt | outputs/submission_videomae-clip16-ofs0.0.csv | | first videomae baseline |
+| videomae-clip16-ofs0.5 | 16 | 0.5 | | outputs/best_videomae_clip16_ofs0p5.pt | outputs/submission_videomae-clip16-ofs0.5.csv | | anchor offset ablation |
