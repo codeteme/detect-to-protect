@@ -186,6 +186,7 @@ def main():
         assert wandb is not None
         os.environ["WANDB_DIR"] = str(OUT_DIR)
         os.environ["WANDB_CACHE_DIR"] = str(OUT_DIR / "wandb-cache")
+        os.environ["WANDB_CONSOLE"] = "off"
         wandb.init(
             project="detect-to-protect",
             name=run_name,
