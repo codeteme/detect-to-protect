@@ -161,6 +161,30 @@ squeue -u <netid>                      # check job status
 tail -f logs/train_<job_id>.out        # live log output
 ```
 
+### 4.1 Running baseline prediction jobs (batch)
+
+Do not run `python src/predict_baseline.py` directly on a login node. Use `sbatch`.
+
+```bash
+# baseline-scratch
+CLIP_LEN=32 ANCHOR_OFFSET_SEC=0.0 RUN_NAME=baseline-scratch sbatch scripts/submit_predict_baseline.sh
+
+# baseline-clip64-ofs0.0
+CLIP_LEN=64 ANCHOR_OFFSET_SEC=0.0 RUN_NAME=baseline-clip64-ofs0.0 sbatch scripts/submit_predict_baseline.sh
+
+# baseline-clip100-ofs0.0
+CLIP_LEN=100 ANCHOR_OFFSET_SEC=0.0 RUN_NAME=baseline-clip100-ofs0.0 sbatch scripts/submit_predict_baseline.sh
+
+# baseline-clip32-ofs0.5
+CLIP_LEN=32 ANCHOR_OFFSET_SEC=0.5 RUN_NAME=baseline-clip32-ofs0.5 sbatch scripts/submit_predict_baseline.sh
+```
+
+Monitor prediction logs:
+```bash
+squeue -u <netid>
+tail -f logs/predict_baseline_<jobid>.out
+```
+
 ---
 
 ## 5. Project Structure
@@ -168,6 +192,9 @@ tail -f logs/train_<job_id>.out        # live log output
 ```
 detect-to-protect/
 ├── activate.sh          # ← source this every session
+├── docs/
+│   ├── setup.md
+│   └── project-decisions.md
 ├── data/
 │   ├── train.csv
 │   ├── test.csv
@@ -180,6 +207,11 @@ detect-to-protect/
 ├── notebooks/
 │   ├── preprocess.ipynb
 │   └── train.ipynb
+├── scripts/
+│   ├── submit_train.sh
+│   ├── submit_train_v2.sh
+│   ├── submit_train_baseline.sh
+│   └── submit_predict_baseline.sh
 ├── src/
 │   ├── __init__.py
 │   ├── data/            # video_loader, segmentation, depth, dataset
@@ -188,8 +220,7 @@ detect-to-protect/
 │   └── predict.py
 ├── logs/                # sbatch output logs
 ├── requirements.txt
-├── ARCHITECTURE.md
-└── TEAM_SETUP.md
+└── outputs/             # checkpoints + submissions
 ```
 
 ---
@@ -265,6 +296,7 @@ https://wandb.ai/<entity>/<project>
 | Torch loads from `~/.local/...` | `pip uninstall torch torchvision -y` then reinstall via shared env pip |
 | Job killed immediately | Not on a GPU node; always `srun` or `sbatch` before running training |
 | SSH tunnel drops mid-training | Switch to `sbatch` — job continues even after disconnect |
+| Prediction process is `Killed` at start | You ran on login node/CPU; submit `scripts/submit_predict_baseline.sh` with `sbatch` |
 | Accidentally edited `~/detect-to-protect` | `rm -rf ~/detect-to-protect`; work only in the shared path |
 | W&B page shows no runs | Check correct entity/project URL and clear dashboard filters |
 | `wandb: command not found` | Use full binary path: `/hpc/group/.../envs/dtp/bin/wandb` |

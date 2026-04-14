@@ -103,7 +103,13 @@ Why this test:
 | baseline-scratch | 32 | 0.0 | 0.6787 | outputs/best_baseline_scratch_clip32_ofs0p0.pt | outputs/submission_baseline-scratch.csv |  | first baseline |
 | baseline-clip64-ofs0.0 | 64 | 0.0 | 0.6331 | outputs/best_baseline_scratch_clip64_ofs0p0.pt | outputs/submission_baseline-clip64-ofs0.0.csv |  | lower than baseline |
 | baseline-clip100-ofs0.0 | 100 | 0.0 | 0.6289 | outputs/best_baseline_scratch_clip100_ofs0p0.pt | outputs/submission_baseline-clip100-ofs0.0.csv |  | lower than baseline |
-| baseline-clip32-ofs0.5 | 32 | 0.5 |  | outputs/best_baseline_scratch_clip32_ofs0p5.pt | outputs/submission_baseline-clip32-ofs0.5.csv |  |  |
+| baseline-clip32-ofs0.5 | 32 | 0.5 | 0.5894 | outputs/best_baseline_scratch_clip32_ofs0p5.pt | outputs/submission_baseline-clip32-ofs0.5.csv |  | lower than baseline |
+
+## Prediction Outcome Notes
+
+- Prediction jobs completed successfully on DCC.
+- Final rerun used per-ablation checkpoint and submission paths.
+- Four ablation-specific submission files were generated in `outputs/` and copied to local `outputs/`.
 
 ## Next Step
 
