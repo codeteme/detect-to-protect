@@ -183,6 +183,8 @@ def main():
 
     if wandb_enabled:
         assert wandb is not None
+        os.environ["WANDB_DIR"] = str(OUT_DIR)
+        os.environ["WANDB_CACHE_DIR"] = str(OUT_DIR / "wandb-cache")
         wandb.init(
             project="detect-to-protect",
             name=run_name,
