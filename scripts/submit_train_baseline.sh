@@ -35,8 +35,8 @@ echo "ANCHOR_OFFSET_SEC: ${ANCHOR_OFFSET_SEC}"
 echo "RUN_NAME: ${RUN_NAME}"
 
 $PYTHON_BIN -u src/train_baseline.py \
-	--clip-len "${CLIP_LEN}" \
-	--anchor-offset-sec "${ANCHOR_OFFSET_SEC}" \
-	--run-name "${RUN_NAME}"
+  --clip-len "${CLIP_LEN}" \
+  --anchor-offset-sec "${ANCHOR_OFFSET_SEC}" \
+  --run-name "${RUN_NAME}"
 
 echo "Job finished: $(date)"
