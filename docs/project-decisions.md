@@ -110,7 +110,3 @@ Why this test:
 - Prediction jobs completed successfully on DCC.
 - Final rerun used per-ablation checkpoint and submission paths.
 - Four ablation-specific submission files were generated in `outputs/` and copied to local `outputs/`.
-
-## Next Step
-
-Train and compare the clip-length and anchor-offset ablations. After that, move to VideoMAE fine-tuning.
