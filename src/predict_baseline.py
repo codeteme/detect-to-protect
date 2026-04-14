@@ -3,9 +3,11 @@ Minimal baseline inference script (for TinyVideoCNN checkpoint).
 
 Usage:
     python src/predict_baseline.py
+    python src/predict_baseline.py --checkpoint-path outputs/best_baseline_scratch_clip64_ofs0p0.pt --submission-path outputs/submission_baseline-clip64-ofs0.0.csv
 """
 
 from pathlib import Path
+import argparse
 
 import numpy as np
 import pandas as pd
@@ -89,17 +91,29 @@ class TinyVideoCNN(nn.Module):
         return self.classifier(x).squeeze(-1)
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Run baseline prediction")
+    parser.add_argument("--checkpoint-path", type=str, default="")
+    parser.add_argument("--submission-path", type=str, default="")
+    return parser.parse_args()
+
+
 def main():
+    args = parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     pin_mem = torch.cuda.is_available()
     print(f"Device: {device}")
 
-    if not CKPT_PATH.exists():
-        raise FileNotFoundError(f"Checkpoint not found: {CKPT_PATH}")
+    ckpt_path = Path(args.checkpoint_path) if args.checkpoint_path else CKPT_PATH
+    submission_path = Path(args.submission_path) if args.submission_path else SUBMISSION_PATH
 
-    ckpt = torch.load(CKPT_PATH, map_location=device, weights_only=False)
+    if not ckpt_path.exists():
+        raise FileNotFoundError(f"Checkpoint not found: {ckpt_path}")
+
+    ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
     clip_len = int(ckpt.get("config", {}).get("clip_len", DEFAULT_CLIP_LEN))
     print(f"Loaded checkpoint from epoch {ckpt['epoch']} | val_auc={ckpt['val_auc']:.4f}")
+    print(f"Checkpoint path: {ckpt_path}")
     print(f"Using clip_len={clip_len}")
 
     model = TinyVideoCNN().to(device)
@@ -126,9 +140,9 @@ def main():
             all_ids.extend(list(batch_ids))
 
     sub_df = pd.DataFrame({"id": all_ids, "target": all_probs})
-    sub_df.to_csv(SUBMISSION_PATH, index=False)
+    sub_df.to_csv(submission_path, index=False)
 
-    print(f"Saved: {SUBMISSION_PATH}")
+    print(f"Saved: {submission_path}")
     print(sub_df.head(10))
     print(
         f"Score distribution: min={sub_df.target.min():.4f} "

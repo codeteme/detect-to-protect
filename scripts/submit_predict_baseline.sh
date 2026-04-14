@@ -27,11 +27,23 @@ fi
 echo "Python: $($PYTHON_BIN -c 'import sys; print(sys.executable)')"
 echo "CUDA: $($PYTHON_BIN -c 'import torch; print(torch.cuda.is_available())')"
 
-if [[ -z "${CLIP_LEN:-}" ]]; then
-  CLIP_LEN=32
-fi
-echo "CLIP_LEN: ${CLIP_LEN}"
+CLIP_LEN=${CLIP_LEN:-32}
+ANCHOR_OFFSET_SEC=${ANCHOR_OFFSET_SEC:-0.0}
+RUN_NAME=${RUN_NAME:-baseline-clip${CLIP_LEN}-ofs${ANCHOR_OFFSET_SEC}}
+OFFSET_TAG=${ANCHOR_OFFSET_SEC//./p}
+OFFSET_TAG=${OFFSET_TAG//-/m}
 
-$PYTHON_BIN -u src/predict_baseline.py
+CHECKPOINT_PATH=${CHECKPOINT_PATH:-outputs/best_baseline_scratch_clip${CLIP_LEN}_ofs${OFFSET_TAG}.pt}
+SUBMISSION_PATH=${SUBMISSION_PATH:-outputs/submission_${RUN_NAME}.csv}
+
+echo "CLIP_LEN: ${CLIP_LEN}"
+echo "ANCHOR_OFFSET_SEC: ${ANCHOR_OFFSET_SEC}"
+echo "RUN_NAME: ${RUN_NAME}"
+echo "CHECKPOINT_PATH: ${CHECKPOINT_PATH}"
+echo "SUBMISSION_PATH: ${SUBMISSION_PATH}"
+
+$PYTHON_BIN -u src/predict_baseline.py \
+	--checkpoint-path "${CHECKPOINT_PATH}" \
+	--submission-path "${SUBMISSION_PATH}"
 
 echo "Job finished: $(date)"

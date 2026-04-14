@@ -135,7 +135,7 @@ If it shows `/opt/apps/rhel9/...` — go to Section 7.
 ## 4. Running Training as a Batch Job (recommended for full runs)
 
 Use `sbatch` for any run longer than ~30 min — it survives SSH disconnects.  
-Create `submit_train.sh` in the project root:
+Create `scripts/submit_train.sh`:
 
 ```bash
 #!/bin/bash
@@ -156,7 +156,7 @@ python src/train.py
 Submit and monitor:
 ```bash
 mkdir -p logs
-sbatch submit_train.sh
+sbatch scripts/submit_train.sh
 squeue -u <netid>                      # check job status
 tail -f logs/train_<job_id>.out        # live log output
 ```
@@ -244,7 +244,7 @@ echo 'export WANDB_API_KEY=<your_api_key>' >> ~/.bashrc
 ### 7.3 Submit jobs with W&B env exported
 
 ```bash
-sbatch --export=ALL,WANDB_API_KEY=$WANDB_API_KEY submit_train_baseline.sh
+sbatch --export=ALL,WANDB_API_KEY=$WANDB_API_KEY scripts/submit_train_baseline.sh
 ```
 
 Open project runs in browser (replace with your account/project):
