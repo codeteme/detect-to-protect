@@ -10,12 +10,4 @@
 
 source /hpc/group/coursess26/ids705/team-project/detect-to-protect/activate.sh
 
-cd /hpc/group/coursess26/ids705/team-project/detect-to-protect
-
-echo "Job started: $(date)"
-echo "Node: $(hostname)"
-echo "GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader)"
-
 python src/train_v2.py
-
-echo "Job finished: $(date)"

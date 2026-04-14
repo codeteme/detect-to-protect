@@ -27,6 +27,11 @@ fi
 echo "Python: $($PYTHON_BIN -c 'import sys; print(sys.executable)')"
 echo "CUDA: $($PYTHON_BIN -c 'import torch; print(torch.cuda.is_available())')"
 
+if [[ -z "${CLIP_LEN:-}" ]]; then
+  CLIP_LEN=32
+fi
+echo "CLIP_LEN: ${CLIP_LEN}"
+
 $PYTHON_BIN -u src/predict_baseline.py
 
 echo "Job finished: $(date)"

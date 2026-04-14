@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=dtp-videomae
+#SBATCH --job-name=dtp-train
 #SBATCH --partition=courses-gpu
 #SBATCH --gres=gpu:1
 #SBATCH --mem=32G
@@ -10,12 +10,4 @@
 
 source /hpc/group/coursess26/ids705/team-project/detect-to-protect/activate.sh
 
-cd /hpc/group/coursess26/ids705/team-project/detect-to-protect
-
-echo "Job started: $(date)"
-echo "Node: $(hostname)"
-echo "GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader)"
-
 python src/train.py
-
-echo "Job finished: $(date)"
