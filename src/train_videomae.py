@@ -170,6 +170,7 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     pin_mem = torch.cuda.is_available()
     print(f"Device: {device}")
+    print("Initializing W&B...", flush=True)
 
     wandb_enabled = (
         (not args.disable_wandb)
@@ -183,6 +184,7 @@ def main():
 
     if wandb_enabled:
         assert wandb is not None
+        os.environ["WANDB_MODE"] = os.getenv("WANDB_MODE", "offline")
         os.environ["WANDB_DIR"] = str(OUT_DIR)
         os.environ["WANDB_CACHE_DIR"] = str(OUT_DIR / "wandb-cache")
         wandb.init(

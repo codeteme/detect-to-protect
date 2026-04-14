@@ -29,6 +29,7 @@ echo "CUDA: $($PYTHON_BIN -c 'import torch; print(torch.cuda.is_available())')"
 
 # Compute nodes have no internet — run W&B and HF offline
 export WANDB_MODE=offline
+export WANDB_API_KEY=${WANDB_API_KEY:-$(grep -A2 'wandb.ai' ~/.netrc | grep password | awk '{print $2}')}
 export HF_HUB_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 
