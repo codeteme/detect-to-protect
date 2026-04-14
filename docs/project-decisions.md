@@ -74,11 +74,21 @@ CLIP_LEN=64  ANCHOR_OFFSET_SEC=0.0 RUN_NAME=baseline-clip64-ofs0.0  sbatch scrip
 CLIP_LEN=100 ANCHOR_OFFSET_SEC=0.0 RUN_NAME=baseline-clip100-ofs0.0 sbatch scripts/submit_train_baseline.sh
 ```
 
+Why this test:
+
+- Tests how much temporal context helps prediction quality.
+- Checks whether longer clips add signal or mostly add noise.
+
 ### Event-anchor ablation
 
 ```bash
 CLIP_LEN=32  ANCHOR_OFFSET_SEC=0.5 RUN_NAME=baseline-clip32-ofs0.5  sbatch scripts/submit_train_baseline.sh
 ```
+
+Why this test:
+
+- Tests if the model can predict from pre-collision cues.
+- Reduces chance of relying on impact-moment frames only.
 
 ## W&B Notes
 
