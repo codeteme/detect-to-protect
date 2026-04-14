@@ -27,6 +27,11 @@ fi
 echo "Python: $($PYTHON_BIN -c 'import sys; print(sys.executable)')"
 echo "CUDA: $($PYTHON_BIN -c 'import torch; print(torch.cuda.is_available())')"
 
+# Compute nodes have no internet — run everything offline
+export WANDB_MODE=offline
+export HF_HUB_OFFLINE=1
+export TRANSFORMERS_OFFLINE=1
+
 CLIP_LEN=${CLIP_LEN:-16}
 ANCHOR_OFFSET_SEC=${ANCHOR_OFFSET_SEC:-0.0}
 RUN_NAME=${RUN_NAME:-videomae-clip${CLIP_LEN}-ofs${ANCHOR_OFFSET_SEC}}
@@ -41,3 +46,10 @@ $PYTHON_BIN -u src/train_videomae.py \
     --run-name "${RUN_NAME}"
 
 echo "Job finished: $(date)"
+
+# Sync offline W&B runs to cloud.
+# The login node (where this runs post-job) has internet access.
+echo "Syncing W&B offline runs..."
+wandb sync outputs/wandb/offline-run-* \
+    && echo "W&B sync done." \
+    || echo "W&B sync failed — run manually: wandb sync outputs/wandb/offline-run-*"
