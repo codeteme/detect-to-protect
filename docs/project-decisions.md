@@ -109,18 +109,30 @@ Why this test:
 
 Fine-tuning MCG-NJU/videomae-base with binary classification head. Clip length is fixed at 16 frames — the model was pretrained with fixed position embeddings for 16 frames and cannot handle other lengths without retraining the embeddings.
 
-### Event-anchor ablation
+Each modality combination is tested at both anchor offsets (0.0 and 0.5).
 
-```bash
-jid=$(CLIP_LEN=16 ANCHOR_OFFSET_SEC=0.5 RUN_NAME=videomae-clip16-ofs0.5 sbatch scripts/submit_train_videomae.sh | awk '{print $4}')
-CLIP_LEN=16 ANCHOR_OFFSET_SEC=0.5 RUN_NAME=videomae-clip16-ofs0.5 sbatch --dependency=afterok:${jid} scripts/submit_predict_videomae.sh
-```
+### Modality ablations
 
-Why: tests if the model can predict from pre-collision cues rather than impact frames.
+| stage | modalities | script |
+|---|---|---|
+| 1 | rgb | train_videomae.py |
+| 2 | rgb + depth | train_videomae_depth.py |
+| 3 | rgb + seg | train_videomae_seg.py |
+| 4 | rgb + depth + seg | train_videomae_full.py |
+
+### Anchor offset
+
+Both 0.0 and 0.5 tested for each modality combination.
 
 ## VideoMAE Experiment Tracking Table
 
-| run_name | clip_len | anchor_offset_sec | best_val_auc | checkpoint | submission_file | kaggle_score | notes |
-|---|---:|---:|---:|---|---|---:|---|
-| videomae-clip16-ofs0.0 | 16 | 0.0 | 0.7690 | outputs/best_videomae_clip16_ofs0p0.pt | outputs/submission_videomae-clip16-ofs0.0.csv | | first videomae baseline |
-| videomae-clip16-ofs0.5 | 16 | 0.5 | 0.7724 | outputs/best_videomae_clip16_ofs0p5.pt | outputs/submission_videomae-clip16-ofs0.5.csv | | anchor offset ablation |
+| run_name | modalities | anchor_offset_sec | best_val_auc | checkpoint | submission_file | kaggle_score | notes |
+|---|---|---:|---:|---|---|---:|---|
+| videomae-clip16-ofs0.0 | rgb | 0.0 | 0.7690 | outputs/best_videomae_clip16_ofs0p0.pt | outputs/submission_videomae-clip16-ofs0.0.csv | | rgb baseline |
+| videomae-clip16-ofs0.5 | rgb | 0.5 | 0.7724 | outputs/best_videomae_clip16_ofs0p5.pt | outputs/submission_videomae-clip16-ofs0.5.csv | | rgb anchor ablation |
+| videomae-depth-ofs0.0 | rgb+depth | 0.0 | | outputs/best_videomae_depth_ofs0p0.pt | outputs/submission_videomae-depth-ofs0.0.csv | | |
+| videomae-depth-ofs0.5 | rgb+depth | 0.5 | | outputs/best_videomae_depth_ofs0p5.pt | outputs/submission_videomae-depth-ofs0.5.csv | | |
+| videomae-seg-ofs0.0 | rgb+seg | 0.0 | 0.6823 | outputs/best_videomae_seg_ofs0p0.pt | outputs/submission_videomae-seg-ofs0.0.csv | | lower than rgb only |
+| videomae-seg-ofs0.5 | rgb+seg | 0.5 | 0.6657 | outputs/best_videomae_seg_ofs0p5.pt | outputs/submission_videomae-seg-ofs0.5.csv | | lower than rgb only |
+| videomae-full-ofs0.0 | rgb+depth+seg | 0.0 | | outputs/best_videomae_full_ofs0p0.pt | outputs/submission_videomae-full-ofs0.0.csv | | running |
+| videomae-full-ofs0.5 | rgb+depth+seg | 0.5 | | outputs/best_videomae_full_ofs0p5.pt | outputs/submission_videomae-full-ofs0.5.csv | | running |
