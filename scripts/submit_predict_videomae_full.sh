@@ -20,9 +20,9 @@ PYTHON_BIN=/hpc/group/coursess26/ids705/team-project/detect-to-protect/envs/dtp/
 echo "Job started: $(date)"
 echo "Node: $(hostname)"
 if command -v nvidia-smi >/dev/null 2>&1; then
-	echo "GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader)"
+    echo "GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader)"
 else
-	echo "GPU: nvidia-smi not available"
+    echo "GPU: nvidia-smi not available"
 fi
 echo "Python: $($PYTHON_BIN -c 'import sys; print(sys.executable)')"
 echo "CUDA: $($PYTHON_BIN -c 'import torch; print(torch.cuda.is_available())')"
@@ -44,7 +44,8 @@ echo "CHECKPOINT_PATH: ${CHECKPOINT_PATH}"
 echo "SUBMISSION_PATH: ${SUBMISSION_PATH}"
 
 $PYTHON_BIN -u src/predict_videomae_full.py \
-	--checkpoint-path "${CHECKPOINT_PATH}" \
-	--submission-path "${SUBMISSION_PATH}"
+    --checkpoint-path "${CHECKPOINT_PATH}" \
+    --submission-path "${SUBMISSION_PATH}" \
+    --batch-size 2
 
 echo "Job finished: $(date)"

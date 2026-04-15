@@ -18,7 +18,7 @@ import torch.nn as nn
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, Dataset, Subset
-from transformers import VideoMAEForVideoClassification, VideoMAEImageProcessor
+from transformers import VideoMAEForVideoClassification, VideoMAEImageProcessor, get_cosine_schedule_with_warmup
 from tqdm import tqdm
 
 try:
@@ -39,9 +39,12 @@ SEG_DIR = DATA_DIR / "segmentation" / "train"
 
 SEED = 42
 BATCH_SIZE = 4
+ACCUM_STEPS = 4  # Effective batch size = BATCH_SIZE * ACCUM_STEPS
 NUM_WORKERS = 4
 EPOCHS = 10
-LR = 1e-4
+FREEZE_EPOCHS = 2 # Epochs to train only the head
+HEAD_LR = 1e-4
+BACKBONE_LR = 1e-5
 WEIGHT_DECAY = 1e-4
 VAL_SPLIT = 0.2
 FPS = 10
@@ -97,7 +100,7 @@ class ThreeStreamDataset(Dataset):
             if dmax > dmin:
                 arr = (arr - dmin) / (dmax - dmin) * 255.0
         arr_uint8 = arr.astype(np.uint8)
-        tiled = np.stack([arr_uint8] * 3, axis=-1)          # [T, H, W, 3]
+        tiled = np.stack([arr_uint8] * 3, axis=-1)          
         frames_list = [tiled[i] for i in range(self.clip_len)]
         return self.processor(frames_list, return_tensors="pt")["pixel_values"].squeeze(0)
 
@@ -118,8 +121,8 @@ class ThreeStreamDataset(Dataset):
 
         rgb_list = [rgb_clip[i] for i in range(self.clip_len)]
         rgb_pixels = self.processor(rgb_list, return_tensors="pt")["pixel_values"].squeeze(0)
-        dep_pixels = self._to_pixels(dep_clip, normalize=True)   # depth: normalize first
-        seg_pixels = self._to_pixels(seg_clip, normalize=False)  # seg: already uint8
+        dep_pixels = self._to_pixels(dep_clip, normalize=True)   
+        seg_pixels = self._to_pixels(seg_clip, normalize=False)  
 
         y = torch.tensor(row["target"], dtype=torch.float32)
         return rgb_pixels, dep_pixels, seg_pixels, y
@@ -141,7 +144,14 @@ class ThreeStreamVideoMAE(nn.Module):
         self.rgb_encoder.classifier = nn.Identity()
         self.dep_encoder.classifier = nn.Identity()
         self.seg_encoder.classifier = nn.Identity()
-        self.fusion_head = nn.Linear(hidden * 3, 1)
+        
+        # Upgraded MLP Fusion Head
+        self.fusion_head = nn.Sequential(
+            nn.Linear(hidden * 3, hidden),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(hidden, 1)
+        )
 
     def forward(self, rgb_pixels, dep_pixels, seg_pixels):
         rgb_feat = self.rgb_encoder(pixel_values=rgb_pixels).logits
@@ -151,30 +161,42 @@ class ThreeStreamVideoMAE(nn.Module):
         return self.fusion_head(fused).squeeze(-1)
 
 
-def run_epoch(model, loader, criterion, optimizer, device):
+def run_epoch(model, loader, criterion, optimizer, scheduler, device, accum_steps):
     is_train = optimizer is not None
     model.train() if is_train else model.eval()
 
     total_loss = 0.0
     y_true, y_score = [], []
 
-    for rgb_pixels, dep_pixels, seg_pixels, y in tqdm(loader, leave=False):
+    if is_train:
+        optimizer.zero_grad(set_to_none=True)
+
+    for i, (rgb_pixels, dep_pixels, seg_pixels, y) in enumerate(tqdm(loader, leave=False)):
         rgb_pixels = rgb_pixels.to(device, non_blocking=True)
         dep_pixels = dep_pixels.to(device, non_blocking=True)
         seg_pixels = seg_pixels.to(device, non_blocking=True)
         y = y.to(device, non_blocking=True)
 
-        if is_train:
-            optimizer.zero_grad(set_to_none=True)
-
         with torch.set_grad_enabled(is_train):
             logits = model(rgb_pixels, dep_pixels, seg_pixels)
             loss = criterion(logits, y)
+            
             if is_train:
+                # Normalize loss for gradient accumulation
+                loss = loss / accum_steps
                 loss.backward()
-                optimizer.step()
 
-        total_loss += loss.item() * rgb_pixels.size(0)
+                # Step optimizer every `accum_steps` or at the end of the loader
+                if (i + 1) % accum_steps == 0 or (i + 1) == len(loader):
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0) # Clip gradients
+                    optimizer.step()
+                    if scheduler is not None:
+                        scheduler.step()
+                    optimizer.zero_grad(set_to_none=True)
+
+        # Re-scale loss for accurate logging
+        step_loss = loss.item() * accum_steps if is_train else loss.item()
+        total_loss += step_loss * rgb_pixels.size(0)
         y_true.extend(y.detach().cpu().tolist())
         y_score.extend(torch.sigmoid(logits).detach().cpu().tolist())
 
@@ -185,9 +207,12 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Train three-stream VideoMAE RGB+Depth+Seg")
     parser.add_argument("--anchor-offset-sec", type=float, default=ANCHOR_OFFSET_SEC)
     parser.add_argument("--run-name", type=str, default="")
-    parser.add_argument("--lr", type=float, default=LR)
+    parser.add_argument("--head-lr", type=float, default=HEAD_LR)
+    parser.add_argument("--backbone-lr", type=float, default=BACKBONE_LR)
     parser.add_argument("--batch-size", type=int, default=BATCH_SIZE)
+    parser.add_argument("--accum-steps", type=int, default=ACCUM_STEPS)
     parser.add_argument("--epochs", type=int, default=EPOCHS)
+    parser.add_argument("--freeze-epochs", type=int, default=FREEZE_EPOCHS)
     parser.add_argument("--disable-wandb", action="store_true")
     return parser.parse_args()
 
@@ -211,10 +236,6 @@ def main():
         and bool(os.getenv("WANDB_API_KEY"))
         and (wandb is not None)
     )
-    if not args.disable_wandb and wandb is None:
-        print("wandb not installed; running without W&B")
-    if not args.disable_wandb and wandb is not None and not os.getenv("WANDB_API_KEY"):
-        raise ValueError("WANDB_API_KEY is not set in environment")
 
     if wandb_enabled:
         assert wandb is not None
@@ -227,18 +248,21 @@ def main():
             config={
                 "seed": SEED,
                 "batch_size": args.batch_size,
+                "accum_steps": args.accum_steps,
+                "effective_batch_size": args.batch_size * args.accum_steps,
                 "epochs": args.epochs,
-                "learning_rate": args.lr,
+                "freeze_epochs": args.freeze_epochs,
+                "head_lr": args.head_lr,
+                "backbone_lr": args.backbone_lr,
                 "weight_decay": WEIGHT_DECAY,
                 "clip_len": CLIP_LEN,
                 "fps": FPS,
                 "anchor_offset_sec": anchor_offset_sec,
                 "model": MODEL_NAME,
-                "fusion": "three-stream-late",
+                "fusion": "three-stream-late-mlp",
                 "modalities": "rgb+depth+seg",
             },
         )
-        print(f"W&B run: {wandb.run.url}", flush=True)
     else:
         print("W&B disabled", flush=True)
 
@@ -251,7 +275,6 @@ def main():
         csv_path=TRAIN_CSV, frames_dir=FRAMES_DIR, depth_dir=DEPTH_DIR, seg_dir=SEG_DIR,
         processor=processor, fps=FPS, clip_len=CLIP_LEN, anchor_offset_sec=anchor_offset_sec,
     )
-    print(f"Usable videos: {len(dataset)}", flush=True)
 
     labels = dataset.df["target"].to_numpy(dtype=np.int64)
     idx = np.arange(len(dataset))
@@ -263,12 +286,41 @@ def main():
                             shuffle=False, num_workers=NUM_WORKERS, pin_memory=pin_mem)
 
     criterion = nn.BCEWithLogitsLoss()
-    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=WEIGHT_DECAY)
-
     best_val_auc = 0.0
+
+    # Initial Setup: Freeze backbones, train only the head
+    print(f"Freezing backbones for the first {args.freeze_epochs} epochs...", flush=True)
+    for name, param in model.named_parameters():
+        if "encoder" in name:
+            param.requires_grad = False
+
+    optimizer = torch.optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=args.head_lr, weight_decay=WEIGHT_DECAY)
+    scheduler = None # No scheduler during the frozen phase
+
     for epoch in range(1, args.epochs + 1):
-        train_loss, train_auc = run_epoch(model, train_loader, criterion, optimizer, device)
-        val_loss, val_auc = run_epoch(model, val_loader, criterion, None, device)
+        
+        # Transition: Unfreeze and apply differential LRs & scheduler
+        if epoch == args.freeze_epochs + 1:
+            print("Unfreezing backbones. Applying differential learning rates...", flush=True)
+            for param in model.parameters():
+                param.requires_grad = True
+                
+            optimizer = torch.optim.AdamW([
+                {"params": model.rgb_encoder.parameters(), "lr": args.backbone_lr},
+                {"params": model.dep_encoder.parameters(), "lr": args.backbone_lr},
+                {"params": model.seg_encoder.parameters(), "lr": args.backbone_lr},
+                {"params": model.fusion_head.parameters(), "lr": args.head_lr},
+            ], weight_decay=WEIGHT_DECAY)
+
+            total_train_steps = (len(train_loader) // args.accum_steps) * (args.epochs - args.freeze_epochs)
+            scheduler = get_cosine_schedule_with_warmup(
+                optimizer, 
+                num_warmup_steps=int(total_train_steps * 0.1), 
+                num_training_steps=total_train_steps
+            )
+
+        train_loss, train_auc = run_epoch(model, train_loader, criterion, optimizer, scheduler, device, args.accum_steps)
+        val_loss, val_auc = run_epoch(model, val_loader, criterion, None, None, device, args.accum_steps)
 
         print(
             f"Epoch {epoch:02d}/{args.epochs} | "
@@ -279,8 +331,9 @@ def main():
 
         if wandb_enabled:
             assert wandb is not None
+            current_lr = optimizer.param_groups[0]['lr'] if optimizer else 0.0
             wandb.log({"epoch": epoch, "train_loss": train_loss, "train_auc": train_auc,
-                       "val_loss": val_loss, "val_auc": val_auc})
+                       "val_loss": val_loss, "val_auc": val_auc, "learning_rate": current_lr})
 
         if val_auc > best_val_auc:
             best_val_auc = val_auc
@@ -289,11 +342,9 @@ def main():
                 "model_state_dict": model.state_dict(),
                 "val_auc": val_auc,
                 "config": {"clip_len": CLIP_LEN, "anchor_offset_sec": anchor_offset_sec,
-                           "model_name": MODEL_NAME, "fusion": "three-stream-late",
+                           "model_name": MODEL_NAME, "fusion": "three-stream-late-mlp",
                            "modalities": "rgb+depth+seg"},
             }, best_ckpt)
-            print(f"Saved best checkpoint (val_auc={val_auc:.4f})", flush=True)
-            print(f"Checkpoint path: {best_ckpt}", flush=True)
             if wandb_enabled:
                 assert wandb is not None
                 wandb.log({"best_val_auc": val_auc})

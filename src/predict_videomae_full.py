@@ -114,7 +114,14 @@ class ThreeStreamVideoMAE(nn.Module):
         self.rgb_encoder.classifier = nn.Identity()
         self.dep_encoder.classifier = nn.Identity()
         self.seg_encoder.classifier = nn.Identity()
-        self.fusion_head = nn.Linear(hidden * 3, 1)
+        
+        # Upgraded MLP Fusion Head to match training script
+        self.fusion_head = nn.Sequential(
+            nn.Linear(hidden * 3, hidden),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(hidden, 1)
+        )
 
     def forward(self, rgb_pixels, dep_pixels, seg_pixels):
         rgb_feat = self.rgb_encoder(pixel_values=rgb_pixels).logits
@@ -127,6 +134,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Run three-stream VideoMAE RGB+Depth+Seg prediction")
     parser.add_argument("--checkpoint-path", type=str, default="")
     parser.add_argument("--submission-path", type=str, default="")
+    parser.add_argument("--batch-size", type=int, default=BATCH_SIZE)
     return parser.parse_args()
 
 
@@ -155,7 +163,7 @@ def main():
     model.eval()
 
     test_ds = ThreeStreamTestDataset(TEST_CSV, FRAMES_DIR, DEPTH_DIR, SEG_DIR, processor, clip_len)
-    test_loader = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=False,
+    test_loader = DataLoader(test_ds, batch_size=args.batch_size, shuffle=False,
                              num_workers=NUM_WORKERS, pin_memory=pin_mem)
     print(f"Test set: {len(test_ds)} videos ({len(test_loader)} batches)", flush=True)
 

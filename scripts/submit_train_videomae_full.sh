@@ -20,9 +20,9 @@ PYTHON_BIN=/hpc/group/coursess26/ids705/team-project/detect-to-protect/envs/dtp/
 echo "Job started: $(date)"
 echo "Node: $(hostname)"
 if command -v nvidia-smi >/dev/null 2>&1; then
-	echo "GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader)"
+    echo "GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader)"
 else
-	echo "GPU: nvidia-smi not available"
+    echo "GPU: nvidia-smi not available"
 fi
 echo "Python: $($PYTHON_BIN -c 'import sys; print(sys.executable)')"
 echo "CUDA: $($PYTHON_BIN -c 'import torch; print(torch.cuda.is_available())')"
@@ -37,8 +37,9 @@ echo "ANCHOR_OFFSET_SEC: ${ANCHOR_OFFSET_SEC}"
 echo "RUN_NAME: ${RUN_NAME}"
 
 $PYTHON_BIN -u src/train_videomae_full.py \
-	--anchor-offset-sec "${ANCHOR_OFFSET_SEC}" \
-	--run-name "${RUN_NAME}" \
-	--batch-size 2
+    --anchor-offset-sec "${ANCHOR_OFFSET_SEC}" \
+    --run-name "${RUN_NAME}" \
+    --batch-size 2 \
+    --accum-steps 8
 
 echo "Job finished: $(date)"
