@@ -289,7 +289,8 @@ def main():
         from transformers import VideoMAEForVideoClassification
         model = VideoMAEForVideoClassification.from_pretrained(
             cfg["model_name"], num_labels=1, ignore_mismatched_sizes=True,
-        ).to(device)
+        )
+        model = model.to(device)
         model.load_state_dict(ckpt["model_state_dict"])
         y_true, y_score = infer_single(model, val_loader, device)
 
@@ -314,7 +315,7 @@ def main():
     else:  # baseline
         from train_baseline import TinyVideoCNN
         clip_len = cfg["clip_len"]
-        model = TinyVideoCNN(clip_len=clip_len).to(device)
+        model = TinyVideoCNN().to(device)
         model.load_state_dict(ckpt["model_state_dict"])
         y_true, y_score = infer_baseline_model(model, val_loader, device)
 
