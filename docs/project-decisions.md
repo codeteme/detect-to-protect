@@ -136,3 +136,4 @@ Both 0.0 and 0.5 tested for each modality combination.
 | videomae-seg-ofs0.5 | rgb+seg | 0.5 | 0.6657 | outputs/best_videomae_seg_ofs0p5.pt | outputs/submission_videomae-seg-ofs0.5.csv | | lower than rgb only |
 | videomae-full-ofs0.0 | rgb+depth+seg | 0.0 | | outputs/best_videomae_full_ofs0p0.pt | outputs/submission_videomae-full-ofs0.0.csv | | running |
 | videomae-full-ofs0.5 | rgb+depth+seg | 0.5 | | outputs/best_videomae_full_ofs0p5.pt | outputs/submission_videomae-full-ofs0.5.csv | | running |
+| videomae-full-ofs0.5 | rgb+depth+seg | 0.0 | | outputs/best_videomae_full_ofs0p5.pt | outputs/submission_videomae-full-ofs0.5.csv | | running | variable ..
