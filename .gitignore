@@ -1,28 +1,34 @@
-data/raw/
-data/frames/
-data/features/
+# Data
+data/
+*.npy
+*.parquet
 *.mp4
 *.avi
 *.mov
-*.npy
-*.parquet
+
+# Outputs (checkpoints, submissions, predictions)
+outputs/
+
+# Environments
+venv/
+envs/
+
+# Logs
+logs/
+
+# Python
 __pycache__/
 *.pyc
-.env
-venv/
+
+# Jupyter
+notebooks/.ipynb_checkpoints/
+
+# OS
 .DS_Store
-outputs/
-envs/
-logs/
-data/
-notebooks/.ipynb_checkpoints/
-outputs/
-*.err
-*.out
-envs/
-logs/
-data/
-notebooks/.ipynb_checkpoints/
-outputs/
+
+# Secrets
+.env
+
+# SLURM job output
 *.err
 *.out
