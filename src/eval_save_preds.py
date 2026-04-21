@@ -83,8 +83,8 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data"
 SEED = 42
 VAL_SPLIT = 0.2
-BATCH_SIZE = 8
-NUM_WORKERS = 4
+BATCH_SIZE = 4
+NUM_WORKERS = 0  # login node has limited RAM; no worker processes
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
