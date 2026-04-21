@@ -314,7 +314,6 @@ def main():
 
     else:  # baseline
         from train_baseline import TinyVideoCNN
-        clip_len = cfg["clip_len"]
         model = TinyVideoCNN().to(device)
         model.load_state_dict(ckpt["model_state_dict"])
         y_true, y_score = infer_baseline_model(model, val_loader, device)
