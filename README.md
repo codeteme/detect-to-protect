@@ -28,8 +28,59 @@ We fine-tuned [VideoMAE](https://huggingface.co/MCG-NJU/videomae-base) on the [N
 | VideoMAE fine-tuned | RGB + Seg | 0.0 | 0.682 | (0.625–0.740) |
 | VideoMAE fine-tuned | RGB + Seg | 0.5 | 0.666 | (0.606–0.725) |
 | VideoMAE fine-tuned | **RGB + Depth + Seg** | **0.0** | **0.918** | **(0.884–0.945)** |
+| VideoMAE fine-tuned | RGB + Depth + Seg | 0.5 | — | — |
+| VideoMAE fine-tuned | RGB + Depth + Seg | 0.8 | 0.801 | — |
+| VideoMAE fine-tuned | RGB + Depth + Seg | 1.0 | 0.771 | — |
+| TinyVideoCNN (scratch) | RGB, clip=16 | 0.0 | — | — |
+| TinyVideoCNN (scratch) | RGB, clip=16 | 0.5 | — | — |
 
 95% CIs computed via bootstrap resampling (2,000 iterations) on the held-out 20% validation set.
+
+### Classification Metrics (F1-Optimal Threshold)
+
+Precision, recall, and F1 computed at the threshold that maximises F1 for each model. Run `python src/compute_metrics.py` to reproduce.
+
+| Model | Modalities | Offset (s) | AUC | Precision | Recall | F1 |
+|---|---|---|---|---|---|---|
+| TinyVideoCNN (scratch) | RGB, clip=32 | 0.0 | 0.679 | 0.559 | 0.953 | 0.704 |
+| TinyVideoCNN (scratch) | RGB, clip=32 | 0.5 | 0.589 | 0.538 | 0.940 | 0.684 |
+| TinyVideoCNN (scratch) | RGB, clip=64 | 0.0 | 0.633 | 0.574 | 0.853 | 0.686 |
+| TinyVideoCNN (scratch) | RGB, clip=100 | 0.0 | 0.629 | 0.503 | 1.000 | 0.670 |
+| VideoMAE fine-tuned | RGB | 0.0 | 0.769 | 0.626 | 0.860 | 0.725 |
+| VideoMAE fine-tuned | RGB | 0.5 | 0.772 | 0.689 | 0.767 | 0.726 |
+| VideoMAE fine-tuned | RGB + Depth | 0.0 | 0.814 | 0.733 | 0.787 | 0.759 |
+| VideoMAE fine-tuned | RGB + Depth | 0.5 | 0.712 | 0.608 | 0.860 | 0.713 |
+| VideoMAE fine-tuned | RGB + Seg | 0.0 | 0.682 | 0.627 | 0.773 | 0.693 |
+| VideoMAE fine-tuned | RGB + Seg | 0.5 | 0.666 | 0.537 | 0.973 | 0.692 |
+| **VideoMAE fine-tuned** | **RGB + Depth + Seg** | **0.0** | **0.918** | **0.781** | **0.927** | **0.848** |
+| VideoMAE fine-tuned | RGB + Depth + Seg | 0.5 | — | — | — | — |
+| VideoMAE fine-tuned | RGB + Depth + Seg | 0.8 | 0.801 | 0.685 | 0.900 | 0.778 |
+| VideoMAE fine-tuned | RGB + Depth + Seg | 1.0 | 0.771 | 0.667 | 0.840 | 0.743 |
+| TinyVideoCNN (scratch) | RGB, clip=16 | 0.0 | — | — | — | — |
+| TinyVideoCNN (scratch) | RGB, clip=16 | 0.5 | — | — | — | — |
+
+### Confusion Matrices (F1-Optimal Threshold)
+
+Out of 150 collision clips and 150 non-collision clips in the validation set.
+
+| Model | Offset (s) | Collisions Caught | Collisions Missed | False Alarms | Correct Negatives | Recall | False Alarm Rate |
+|---|---|---|---|---|---|---|---|
+| TinyVideoCNN, clip=32 | 0.0 | 143 | 7 | 113 | 37 | 95.3% | 75.3% |
+| TinyVideoCNN, clip=32 | 0.5 | 141 | 9 | 121 | 29 | 94.0% | 80.7% |
+| TinyVideoCNN, clip=64 | 0.0 | 128 | 22 | 95 | 55 | 85.3% | 63.3% |
+| TinyVideoCNN, clip=100 | 0.0 | 150 | 0 | 148 | 2 | 100.0% | 98.7% |
+| VideoMAE RGB | 0.0 | 129 | 21 | 77 | 73 | 86.0% | 51.3% |
+| VideoMAE RGB | 0.5 | 115 | 35 | 52 | 98 | 76.7% | 34.7% |
+| VideoMAE RGB + Depth | 0.0 | 118 | 32 | 43 | 107 | 78.7% | 28.7% |
+| VideoMAE RGB + Depth | 0.5 | 129 | 21 | 83 | 67 | 86.0% | 55.3% |
+| VideoMAE RGB + Seg | 0.0 | 116 | 34 | 69 | 81 | 77.3% | 46.0% |
+| VideoMAE RGB + Seg | 0.5 | 146 | 4 | 126 | 24 | 97.3% | 84.0% |
+| **VideoMAE Full** | **0.0** | **139** | **11** | **39** | **111** | **92.7%** | **26.0%** |
+| VideoMAE Full | 0.5 | — | — | — | — | — | — |
+| VideoMAE Full | 0.8 | 135 | 15 | 62 | 88 | 90.0% | 41.3% |
+| VideoMAE Full | 1.0 | 126 | 24 | 63 | 87 | 84.0% | 42.0% |
+| TinyVideoCNN, clip=16 | 0.0 | — | — | — | — | — | — |
+| TinyVideoCNN, clip=16 | 0.5 | — | — | — | — | — | — |
 
 ---
 
@@ -68,6 +119,7 @@ detect-to-protect/
 │   ├── predict_videomae_seg.py
 │   ├── predict_videomae_full.py
 │   ├── eval_save_preds.py       # save val predictions for bootstrap CI
+│   ├── compute_metrics.py       # precision, recall, F1, confusion matrix from .npz files
 │   └── visualize_pipeline.py   # generate pipeline figure
 └── data/                        # not tracked in git — see Data section
     ├── train.csv
@@ -138,6 +190,7 @@ $PYTHON src/eval_save_preds.py \
 ## Key Findings
 
 - **Pretraining matters.** VideoMAE fine-tuned on RGB (AUC 0.769) substantially outperformed a 3D CNN trained from scratch (AUC 0.679) on the same data.
-- **All three modalities together are best.** The three-stream model (RGB + Depth + Seg) with freeze-then-finetune training reached AUC 0.918, the highest across all configurations.
+- **All three modalities together are best.** The three-stream model (RGB + Depth + Seg) with freeze-then-finetune training reached AUC 0.918, the highest across all configurations. At its optimal threshold it catches 139/150 collisions (92.7% recall) with a 26% false alarm rate.
 - **Segmentation alone doesn't help, but combined with depth it does.** RGB+Seg scored 0.682 (below the RGB baseline), but RGB+Depth+Seg scored 0.918, suggesting depth and segmentation carry complementary information the model can exploit when fused together.
-- **Only the final 1–2 seconds before impact matter.** Longer clips consistently hurt TinyVideoCNN performance; the most predictive signal is concentrated immediately before the collision event.
+- **The final moments before impact are the most predictive.** For the best model, shifting the clip window back by 0.8s drops AUC from 0.918 to 0.801; shifting back 1.0s drops it further to 0.771. Recall falls from 92.7% to 84.0% and false alarms nearly double. Earlier footage adds noise rather than signal.
+- **Depth is the most time-sensitive modality.** Shifting the clip back 0.5s hurts the depth model sharply (AUC 0.814 → 0.712) but barely affects the RGB-only model (0.769 → 0.772), confirming that proximity cues change most rapidly in the final half-second before a collision.
