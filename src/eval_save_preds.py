@@ -274,6 +274,7 @@ def main():
     labels = dataset.df["target"].to_numpy(dtype=np.int64)
     idx = np.arange(len(dataset))
     _, val_idx = train_test_split(idx, test_size=VAL_SPLIT, random_state=SEED, stratify=labels)
+    clip_ids = dataset.df["id"].iloc[val_idx].to_numpy(dtype=str)
 
     val_loader = DataLoader(
         Subset(dataset, val_idx),
@@ -324,7 +325,7 @@ def main():
 
     out_path = Path(args.out)
     out_path.parent.mkdir(exist_ok=True)
-    np.savez(out_path, y_true=y_true, y_score=y_score)
+    np.savez(out_path, y_true=y_true, y_score=y_score, clip_ids=clip_ids)
     print(f"Saved → {out_path}")
 
 
