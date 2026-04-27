@@ -194,3 +194,20 @@ $PYTHON src/eval_save_preds.py \
 - **Segmentation alone doesn't help, but combined with depth it does.** RGB+Seg scored 0.682 (below the RGB baseline), but RGB+Depth+Seg scored 0.918, suggesting depth and segmentation carry complementary information the model can exploit when fused together.
 - **The final moments before impact are the most predictive.** For the best model, shifting the clip window back by 0.8s drops AUC from 0.918 to 0.801; shifting back 1.0s drops it further to 0.771. Recall falls from 92.7% to 84.0% and false alarms nearly double. Earlier footage adds noise rather than signal. This is reinforced by the baseline clip-length ablation: clip=16 (AUC 0.709) outperforms clip=32 (0.679), clip=64 (0.633), and clip=100 (0.629) — shorter windows consistently perform better.
 - **Depth is the most time-sensitive modality.** Shifting the clip back 0.5s hurts the depth model sharply (AUC 0.814 → 0.712) but barely affects the RGB-only model (0.769 → 0.772), confirming that proximity cues change most rapidly in the final half-second before a collision.
+- **Night is a precision problem, not a recall problem.** The model achieves 100% recall on dark clips (0 missed collisions at night) but over-triggers on dark non-collision scenes — 5 of the 10 worst false positives are dark clips with near-certain confidence (scores ≥ 0.990). All 11 missed collisions are bright daytime clips. This is the inverse of object-detection-based systems (e.g. V-CAS), which fail at night because bounding-box pipelines break in the dark. See [`docs/lighting-analysis.md`](docs/lighting-analysis.md) for the full analysis.
+
+---
+
+## Lighting Analysis
+
+A brightness-based proxy analysis was run on the best model's validation predictions to assess day vs. night performance. Clips were classified as dark (mean last-frame brightness < 60) or bright otherwise.
+
+| Condition | n | AUC | Recall | False Alarm Rate |
+|---|---|---|---|---|
+| All clips | 300 | 0.918 | 92.7% | 26.0% |
+| Bright (day proxy) | 216 | 0.915 | 89.7% | 26.6% |
+| Dark (night proxy) | 84 | 0.922 | **100.0%** | 24.4% |
+
+The model misses zero collisions at night but fires with near-certainty on dark non-collision clips, suggesting a spurious correlation between visual darkness and collision score. All 11 missed collisions are visually bright daytime events where the pre-collision signal is subtle.
+
+See [`docs/lighting-analysis.md`](docs/lighting-analysis.md) for methodology, worst-case clip analysis, comparison with V-CAS, and implications for future work.
