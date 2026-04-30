@@ -155,8 +155,8 @@ PYTHON=envs/dtp/bin/python
 # Example: three-stream best model
 $PYTHON src/eval_save_preds.py \
     --type full \
-    --checkpoint outputs/best_videomae_full_ofs0p0.pt \
-    --out outputs/preds_videomae_full_ofs0p0.npz
+    --checkpoint outputs/best_videomae_full_ofs1p0.pt \
+    --out outputs/preds_videomae_full_ofs1p0.npz
 ```
 
 `--type` choices: `rgb`, `depth`, `seg`, `full`, `baseline`
@@ -166,7 +166,7 @@ $PYTHON src/eval_save_preds.py \
 ## Key Findings
 
 - **Pretraining matters.** VideoMAE fine-tuned on RGB (AUC 0.769) substantially outperformed a 3D CNN trained from scratch (AUC 0.679) on the same data.
-- **All three modalities together are best.** The three-stream model (RGB + Depth + Seg) with freeze-then-finetune training reached AUC 0.918, the highest across all configurations. At its optimal threshold it catches 139/150 collisions (92.7% recall) with a 26% false alarm rate.
+- **All three modalities together are best.** The three-stream model (RGB + Depth + Seg) with freeze-then-finetune training reached AUC 0.918, the highest across all configurations. At its optimal threshold it catches 139/150 collisions (92.7% recall) with a 26% false alarm rate. Trained checkpoints are stored on the DCC at `/hpc/group/coursess26/ids705/team-project/detect-to-protect/outputs/`.
 - **Segmentation alone doesn't help, but combined with depth it does.** RGB+Seg scored 0.682 (below the RGB baseline), but RGB+Depth+Seg scored 0.918, suggesting depth and segmentation carry complementary information the model can exploit when fused together.
 - **The final moments before impact are the most predictive.** For the best model, shifting the clip window back by 0.8s drops AUC from 0.918 to 0.801; shifting back 1.0s drops it further to 0.771. Recall falls from 92.7% to 84.0% and false alarms nearly double. Earlier footage adds noise rather than signal. This is reinforced by the baseline clip-length ablation: clip=16 (AUC 0.709) outperforms clip=32 (0.679), clip=64 (0.633), and clip=100 (0.629) — shorter windows consistently perform better.
 - **Depth is the most time-sensitive modality.** Shifting the clip back 0.5s hurts the depth model sharply (AUC 0.814 → 0.712) but barely affects the RGB-only model (0.769 → 0.772), confirming that proximity cues change most rapidly in the final half-second before a collision.
