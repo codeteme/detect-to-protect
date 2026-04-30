@@ -15,24 +15,16 @@ We fine-tuned [VideoMAE](https://huggingface.co/MCG-NJU/videomae-base) on the [N
 
 ## Results
 
-| Model | Modalities | Offset (s) | Val AUC | 95% CI |
-|---|---|---|---|---|
-| TinyVideoCNN (scratch) | RGB, clip=16 | 0.0 | 0.709 | (0.648–0.765) |
-| TinyVideoCNN (scratch) | RGB, clip=16 | 0.5 | 0.645 | (0.584–0.703) |
-| TinyVideoCNN (scratch) | RGB | 0.0 | 0.679 | (0.618–0.735) |
-| TinyVideoCNN (scratch) | RGB | 0.5 | 0.589 | (0.527–0.651) |
-| TinyVideoCNN (scratch) | RGB, clip=64 | 0.0 | 0.633 | (0.571–0.693) |
-| TinyVideoCNN (scratch) | RGB, clip=100 | 0.0 | 0.629 | (0.567–0.692) |
-| VideoMAE fine-tuned | RGB | 0.0 | 0.769 | (0.712–0.818) |
-| VideoMAE fine-tuned | RGB | 0.5 | 0.772 | (0.718–0.824) |
-| VideoMAE fine-tuned | RGB + Depth | 0.0 | 0.814 | (0.766–0.861) |
-| VideoMAE fine-tuned | RGB + Depth | 0.5 | 0.712 | (0.650–0.768) |
-| VideoMAE fine-tuned | RGB + Seg | 0.0 | 0.682 | (0.625–0.740) |
-| VideoMAE fine-tuned | RGB + Seg | 0.5 | 0.666 | (0.606–0.725) |
-| VideoMAE fine-tuned | **RGB + Depth + Seg** | **0.0** | **0.918** | **(0.884–0.945)** |
-| VideoMAE fine-tuned | RGB + Depth + Seg | 0.5 | — | — |
-| VideoMAE fine-tuned | RGB + Depth + Seg | 0.8 | 0.801 | (0.749–0.850) |
-| VideoMAE fine-tuned | RGB + Depth + Seg | 1.0 | 0.771 | (0.716–0.823) |
+| Model | Modalities | Val AUC | 95% CI |
+|---|---|---|---|
+| TinyVideoCNN (scratch) | RGB, clip=16 | 0.709 | (0.648–0.765) |
+| TinyVideoCNN (scratch) | RGB, clip=32 | 0.679 | (0.618–0.735) |
+| TinyVideoCNN (scratch) | RGB, clip=64 | 0.633 | (0.571–0.693) |
+| TinyVideoCNN (scratch) | RGB, clip=100 | 0.629 | (0.567–0.692) |
+| VideoMAE fine-tuned | RGB | 0.769 | (0.712–0.818) |
+| VideoMAE fine-tuned | RGB + Depth | 0.814 | (0.766–0.861) |
+| VideoMAE fine-tuned | RGB + Seg | 0.682 | (0.625–0.740) |
+| **VideoMAE fine-tuned** | **RGB + Depth + Seg** | **0.918** | **(0.884–0.945)** |
 
 95% CIs computed via bootstrap resampling (2,000 iterations) on the held-out 20% validation set.
 
@@ -40,47 +32,31 @@ We fine-tuned [VideoMAE](https://huggingface.co/MCG-NJU/videomae-base) on the [N
 
 Precision, recall, and F1 computed at the threshold that maximises F1 for each model. Run `python src/compute_metrics.py` to reproduce.
 
-| Model | Modalities | Offset (s) | AUC | 95% CI | Precision | Recall | F1 |
-|---|---|---|---|---|---|---|---|
-| TinyVideoCNN (scratch) | RGB, clip=32 | 0.0 | 0.679 | (0.618–0.735) | 0.559 | 0.953 | 0.704 |
-| TinyVideoCNN (scratch) | RGB, clip=32 | 0.5 | 0.589 | (0.527–0.651) | 0.538 | 0.940 | 0.684 |
-| TinyVideoCNN (scratch) | RGB, clip=64 | 0.0 | 0.633 | (0.571–0.693) | 0.574 | 0.853 | 0.686 |
-| TinyVideoCNN (scratch) | RGB, clip=100 | 0.0 | 0.629 | (0.567–0.692) | 0.503 | 1.000 | 0.670 |
-| TinyVideoCNN (scratch) | RGB, clip=16 | 0.0 | 0.709 | (0.648–0.765) | 0.619 | 0.887 | 0.729 |
-| TinyVideoCNN (scratch) | RGB, clip=16 | 0.5 | 0.645 | (0.584–0.703) | 0.557 | 0.913 | 0.692 |
-| VideoMAE fine-tuned | RGB | 0.0 | 0.769 | (0.712–0.818) | 0.626 | 0.860 | 0.725 |
-| VideoMAE fine-tuned | RGB | 0.5 | 0.772 | (0.718–0.824) | 0.689 | 0.767 | 0.726 |
-| VideoMAE fine-tuned | RGB + Depth | 0.0 | 0.814 | (0.765–0.861) | 0.733 | 0.787 | 0.759 |
-| VideoMAE fine-tuned | RGB + Depth | 0.5 | 0.712 | (0.650–0.768) | 0.608 | 0.860 | 0.713 |
-| VideoMAE fine-tuned | RGB + Seg | 0.0 | 0.682 | (0.625–0.740) | 0.627 | 0.773 | 0.693 |
-| VideoMAE fine-tuned | RGB + Seg | 0.5 | 0.666 | (0.605–0.725) | 0.537 | 0.973 | 0.692 |
-| **VideoMAE fine-tuned** | **RGB + Depth + Seg** | **0.0** | **0.918** | **(0.884–0.945)** | **0.781** | **0.927** | **0.848** |
-| VideoMAE fine-tuned | RGB + Depth + Seg | 0.5 | — | — | — | — | — |
-| VideoMAE fine-tuned | RGB + Depth + Seg | 0.8 | 0.801 | (0.749–0.850) | 0.685 | 0.900 | 0.778 |
-| VideoMAE fine-tuned | RGB + Depth + Seg | 1.0 | 0.771 | (0.716–0.823) | 0.667 | 0.840 | 0.743 |
+| Model | Modalities | AUC | 95% CI | Precision | Recall | F1 |
+|---|---|---|---|---|---|---|
+| TinyVideoCNN (scratch) | RGB, clip=16 | 0.709 | (0.648–0.765) | 0.619 | 0.887 | 0.729 |
+| TinyVideoCNN (scratch) | RGB, clip=32 | 0.679 | (0.618–0.735) | 0.559 | 0.953 | 0.704 |
+| TinyVideoCNN (scratch) | RGB, clip=64 | 0.633 | (0.571–0.693) | 0.574 | 0.853 | 0.686 |
+| TinyVideoCNN (scratch) | RGB, clip=100 | 0.629 | (0.567–0.692) | 0.503 | 1.000 | 0.670 |
+| VideoMAE fine-tuned | RGB | 0.769 | (0.712–0.818) | 0.626 | 0.860 | 0.725 |
+| VideoMAE fine-tuned | RGB + Depth | 0.814 | (0.765–0.861) | 0.733 | 0.787 | 0.759 |
+| VideoMAE fine-tuned | RGB + Seg | 0.682 | (0.625–0.740) | 0.627 | 0.773 | 0.693 |
+| **VideoMAE fine-tuned** | **RGB + Depth + Seg** | **0.918** | **(0.884–0.945)** | **0.781** | **0.927** | **0.848** |
 
 ### Confusion Matrices (F1-Optimal Threshold)
 
 Out of 150 collision clips and 150 non-collision clips in the validation set.
 
-| Model | Offset (s) | Collisions Caught | Collisions Missed | False Alarms | Correct Negatives | Recall | False Alarm Rate |
-|---|---|---|---|---|---|---|---|
-| TinyVideoCNN, clip=32 | 0.0 | 143 | 7 | 113 | 37 | 95.3% | 75.3% |
-| TinyVideoCNN, clip=32 | 0.5 | 141 | 9 | 121 | 29 | 94.0% | 80.7% |
-| TinyVideoCNN, clip=64 | 0.0 | 128 | 22 | 95 | 55 | 85.3% | 63.3% |
-| TinyVideoCNN, clip=100 | 0.0 | 150 | 0 | 148 | 2 | 100.0% | 98.7% |
-| VideoMAE RGB | 0.0 | 129 | 21 | 77 | 73 | 86.0% | 51.3% |
-| VideoMAE RGB | 0.5 | 115 | 35 | 52 | 98 | 76.7% | 34.7% |
-| VideoMAE RGB + Depth | 0.0 | 118 | 32 | 43 | 107 | 78.7% | 28.7% |
-| VideoMAE RGB + Depth | 0.5 | 129 | 21 | 83 | 67 | 86.0% | 55.3% |
-| VideoMAE RGB + Seg | 0.0 | 116 | 34 | 69 | 81 | 77.3% | 46.0% |
-| VideoMAE RGB + Seg | 0.5 | 146 | 4 | 126 | 24 | 97.3% | 84.0% |
-| **VideoMAE Full** | **0.0** | **139** | **11** | **39** | **111** | **92.7%** | **26.0%** |
-| VideoMAE Full | 0.5 | — | — | — | — | — | — |
-| VideoMAE Full | 0.8 | 135 | 15 | 62 | 88 | 90.0% | 41.3% |
-| VideoMAE Full | 1.0 | 126 | 24 | 63 | 87 | 84.0% | 42.0% |
-| TinyVideoCNN, clip=16 | 0.0 | 133 | 17 | 82 | 68 | 88.7% | 54.7% |
-| TinyVideoCNN, clip=16 | 0.5 | 137 | 13 | 109 | 41 | 91.3% | 72.7% |
+| Model | Collisions Caught | Collisions Missed | False Alarms | Correct Negatives | Recall | False Alarm Rate |
+|---|---|---|---|---|---|---|
+| TinyVideoCNN, clip=16 | 133 | 17 | 82 | 68 | 88.7% | 54.7% |
+| TinyVideoCNN, clip=32 | 143 | 7 | 113 | 37 | 95.3% | 75.3% |
+| TinyVideoCNN, clip=64 | 128 | 22 | 95 | 55 | 85.3% | 63.3% |
+| TinyVideoCNN, clip=100 | 150 | 0 | 148 | 2 | 100.0% | 98.7% |
+| VideoMAE RGB | 129 | 21 | 77 | 73 | 86.0% | 51.3% |
+| VideoMAE RGB + Depth | 118 | 32 | 43 | 107 | 78.7% | 28.7% |
+| VideoMAE RGB + Seg | 116 | 34 | 69 | 81 | 77.3% | 46.0% |
+| **VideoMAE Full** | **139** | **11** | **39** | **111** | **92.7%** | **26.0%** |
 
 ---
 
